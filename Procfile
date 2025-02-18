@@ -1,1 +1,1 @@
-web gunicorn --bind 8000 appapp
+web: bash setup.sh
