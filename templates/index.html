@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learn 100 English Words</title>
+    <script>
+        let currentWordId = null;
+
+        function fetchWord() {
+            fetch('/get-word')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('word').innerText = "No words available";
+                        document.getElementById('input-box').style.display = "none";
+                    } else {
+                        currentWordId = data.word_id;
+                        document.getElementById('word').innerText = "Word: " + data.word;
+                        document.getElementById('input-box').style.display = "block";
+                        document.getElementById('answer').value = "";
+                    }
+                });
+        }
+
+        function submitAnswer() {
+            let answer = document.getElementById('answer').value;
+
+            fetch('/submit-answer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    word_id: currentWordId,
+                    answer: answer
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                let resultDiv = document.getElementById('result');
+                if (data.result === "correct") {
+                    resultDiv.innerText = "✅ Correct! (" + data.correct_answers + "/5)";
+                    if (data.correct_answers >= 5) {
+                        resultDiv.innerText += " 🎉 Word learned!";
+                    }
+                } else {
+                    resultDiv.innerText = "❌ Wrong! (" + data.wrong_answers + " wrong attempts)";
+                }
+                setTimeout(fetchWord, 2000); // Fetch next word after 2 seconds
+            });
+        }
+    </script>
+</head>
+<body onload="fetchWord()">
+    <h1>Learn 100 Most Used English Words</h1>
+    <p id="word">Loading...</p>
+    
+    <div id="input-box" style="display:none;">
+        <input type="text" id="answer" placeholder="Enter meaning">
+        <button onclick="submitAnswer()">Submit</button>
+    </div>
+
+    <p id="result"></p>
+</body>
+</html>
