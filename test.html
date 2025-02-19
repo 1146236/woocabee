@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Woocabee</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .stats {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            width: 80%;
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .feedback {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="stats">
+        <span>✅ Correct: <span id="correct">0</span></span> | 
+        <span>❌ Wrong: <span id="wrong">0</span></span> | 
+        <span>📘 Learned: <span id="learned">0</span></span>
+    </div>
+    <div class="container">
+        <h1>Woocabee</h1>
+        <p id="question">Enter the correct word:</p>
+        <p><strong>Meaning:</strong> <span id="meaning"></span></p>
+        <p><strong>Example:</strong> <span id="example"></span></p>
+        <p><strong>Translation:</strong></p>
+        <p><strong>AZ:</strong> <span id="az"></span></p>
+        <p><strong>RU:</strong> <span id="ru"></span></p>
+        <p><strong>TR:</strong> <span id="tr"></span></p>
+        <input type="text" id="wordInput" autofocus>
+        <button onclick="checkOrNext()" id="actionButton">Submit</button>
+        <p class="feedback" id="feedback"></p>
+    </div>
+    
+    <script>
+        const words = [
+            { word: "apple", meaning: "a round fruit", example: "I ate an ***** today.", az: "alma", ru: "яблоко", tr: "elma" },
+            { word: "book", meaning: "a set of written pages", example: "She is reading a *****.", az: "kitab", ru: "книга", tr: "kitap" },
+            { word: "car", meaning: "a vehicle for transportation", example: "He bought a new *****.", az: "maşın", ru: "машина", tr: "araba" }
+        ];
+
+        let currentIndex = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let learnedCount = 0;
+        let isChecking = true;
+
+        function loadQuestion() {
+            let wordObj = words[currentIndex];
+            document.getElementById("question").textContent = `Enter the correct word:`;
+            document.getElementById("meaning").textContent = wordObj.meaning;
+            document.getElementById("example").textContent = wordObj.example;
+            document.getElementById("az").textContent = wordObj.az;
+            document.getElementById("ru").textContent = wordObj.ru;
+            document.getElementById("tr").textContent = wordObj.tr;
+            document.getElementById("wordInput").value = "";
+            document.getElementById("wordInput").focus();
+            document.getElementById("feedback").textContent = "";
+            document.getElementById("actionButton").textContent = "Submit";
+            isChecking = true;
+        }
+
+        function checkOrNext() {
+            if (isChecking) {
+                checkAnswer();
+            } else {
+                nextWord();
+            }
+        }
+
+        function checkAnswer() {
+            let input = document.getElementById("wordInput").value.trim().toLowerCase();
+            let correctWord = words[currentIndex].word;
+
+            if (input === correctWord) {
+                correctCount++;
+                document.getElementById("feedback").textContent = "✅ Correct!";
+                learnedCount++;
+            } else {
+                wrongCount++;
+                document.getElementById("feedback").textContent = "❌ Wrong! The correct answer is: " + correctWord;
+            }
+
+            document.getElementById("correct").textContent = correctCount;
+            document.getElementById("wrong").textContent = wrongCount;
+            document.getElementById("learned").textContent = learnedCount;
+            document.getElementById("actionButton").textContent = "Next";
+            isChecking = false;
+        }
+
+        function nextWord() {
+            currentIndex = (currentIndex + 1) % words.length;
+            loadQuestion();
+        }
+
+        document.getElementById("wordInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                checkOrNext();
+            }
+        });
+
+        loadQuestion();
+    </script>
+</body>
+</html>
