@@ -3,64 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Learn 100 English Words</title>
-    <script>
-        let currentWordId = null;
-
-        function fetchWord() {
-            fetch('/get-word')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        document.getElementById('word').innerText = "No words available";
-                        document.getElementById('input-box').style.display = "none";
-                    } else {
-                        currentWordId = data.word_id;
-                        document.getElementById('word').innerText = "Word: " + data.word;
-                        document.getElementById('input-box').style.display = "block";
-                        document.getElementById('answer').value = "";
-                    }
-                });
+    <title>Woocabee</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
         }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+        .stats {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            width: 80%;
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .feedback {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="stats">
+		<button onclick="logoutUser()">Logout</button>
+        <span>✅ Correct: <span id="correct">0</span></span> | 
+        <span>❌ Wrong: <span id="wrong">0</span></span> | 
+        <span>📘 Learned: <span id="learned">0</span></span>
+    </div>
+    <div class="container">
+        <h1>Woocabee</h1>
+        <p id="question">Loading...</p>
+        <p><strong>Meaning:</strong> <span id="meaning"></span></p>
+        <p><strong>Example:</strong> <span id="example"></span></p>
+        <p><strong>Translation:</strong></p>
+        <p><strong>AZ:</strong> <span id="az"></span></p>
+        <p><strong>RU:</strong> <span id="ru"></span></p>
+        <p><strong>TR:</strong> <span id="tr"></span></p>
+        <input type="text" id="wordInput" autofocus>
+        <button onclick="checkOrNext()" id="actionButton">Submit</button>
+        <p class="feedback" id="feedback"></p>
+    </div>
+    
+<script>
+    let currentWordId = null;
+    let isChecking = true;
 
-        function submitAnswer() {
-            let answer = document.getElementById('answer').value;
-
-            fetch('/submit-answer', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    word_id: currentWordId,
-                    answer: answer
-                })
-            })
+    function fetchWord() {
+        fetch('/get-word')
             .then(response => response.json())
             .then(data => {
-                let resultDiv = document.getElementById('result');
-                if (data.result === "correct") {
-                    resultDiv.innerText = "✅ Correct! (" + data.correct_answers + "/5)";
-                    if (data.correct_answers >= 5) {
-                        resultDiv.innerText += " 🎉 Word learned!";
-                    }
-                } else {
-                    resultDiv.innerText = "❌ Wrong! (" + data.wrong_answers + " wrong attempts)";
-                }
-                setTimeout(fetchWord, 2000); // Fetch next word after 2 seconds
-            });
-        }
-    </script>
-</head>
-<body onload="fetchWord()">
-    <h1>Learn 100 Most Used English Words</h1>
-    <p id="word">Loading...</p>
-    
-    <div id="input-box" style="display:none;">
-        <input type="text" id="answer" placeholder="Enter meaning">
-        <button onclick="submitAnswer()">Submit</button>
-    </div>
+                console.log("✅ Received Word Data:", data);  // Debugging
 
-    <p id="result"></p>
+                if (data.error) {
+                    document.getElementById('question').innerText = "No words available!";
+                    return;
+                }
+
+                currentWordId = data.word_id;
+                document.getElementById("question").textContent = ` `;
+                document.getElementById("meaning").textContent = data.meaning;
+                document.getElementById("example").textContent = data.example;
+                document.getElementById("az").textContent = data.az || "-";
+                document.getElementById("ru").textContent = data.ru || "-";
+                document.getElementById("tr").textContent = data.tr || "-";
+                document.getElementById("wordInput").value = "";
+                document.getElementById("wordInput").focus();
+                document.getElementById("feedback").textContent = "";
+                document.getElementById("actionButton").textContent = "Submit";
+                isChecking = true;
+            })
+            .catch(error => console.error("❌ Fetch word error:", error));
+    }
+
+    function fetchUserStats() {
+        fetch('/user-stats')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("✅ Received User Stats:", data);  // Debugging
+
+                document.getElementById("correct").textContent = data.correct;
+                document.getElementById("wrong").textContent = data.wrong;
+                document.getElementById("learned").textContent = data.learned;
+            })
+            .catch(error => console.error("❌ Fetch user stats error:", error));
+    }
+
+    function checkOrNext() {
+        if (isChecking) {
+            checkAnswer();
+        } else {
+            fetchWord();
+        }
+    }
+		function logoutUser() {
+			fetch('/logout')
+				.then(response => response.json())
+				.then(data => {
+					alert(data.message);
+					window.location.href = "/login"; // Redirect to login page
+				});
+		}
+    function checkAnswer() {
+        let input = document.getElementById("wordInput").value.trim().toLowerCase();
+
+        console.log("📤 Submitting answer:", input, "for word ID:", currentWordId);  // Debugging
+
+        fetch('/submit-answer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word_id: currentWordId, answer: input })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("✅ Response from server:", data);  // Debugging
+
+            let feedbackDiv = document.getElementById("feedback");
+
+            if (data.result === "correct") {
+                feedbackDiv.textContent = "✅ Correct!";
+            } else {
+                feedbackDiv.textContent = "❌ Wrong! The correct answer is: " + data.correct_answer;
+            }
+
+            document.getElementById("actionButton").textContent = "Next";
+            isChecking = false;
+
+            fetchUserStats();  // ✅ Update stats after answering
+        })
+        .catch(error => console.error("❌ Submit answer error:", error));
+    }
+
+    document.getElementById("wordInput").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            checkOrNext();
+        }
+    });
+
+    // ✅ Fetch user stats when the page loads
+    document.addEventListener("DOMContentLoaded", function () {
+        fetchWord();
+        fetchUserStats();
+    });
+</script>
 </body>
 </html>
+
+		
